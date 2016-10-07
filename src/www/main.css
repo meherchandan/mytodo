@@ -1,0 +1,26 @@
+html {
+  font-family: 'Roboto', sans-serif;
+}
+
+body {
+  font-size: 13px;
+  line-height: 20px;
+}
+#app{
+	 display: flex;
+  justify-content: center;
+	padding-top: 20px;
+
+	text-align: center;
+
+}
+
+#todos{
+	padding-left: 0px;
+	  display: flex;
+  justify-content: left;
+
+}
+.editTodo{
+text-decoration: line-through;
+}
