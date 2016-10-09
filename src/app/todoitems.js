@@ -10,6 +10,7 @@ import { red500, grey500 } from 'material-ui/styles/colors';
 
 const styles = {
     listitem: {
+
         display: 'flex',
         textAlign: 'left',
         display: 'inline-block',
@@ -64,10 +65,32 @@ class ToDoItems extends Component {
             this.refs.textField.focus();
         }
     }
-
+serialize(obj) {
+        var str = [];
+        for (var p in obj) {
+            if (obj.hasOwnProperty(p)) {
+                str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+            }
+        }
+        return str.join("&");
+    }
     updatetodoitems(event) {
         if (event.which === 13) {
+            if(event.target.value!==""){
+            let url="http://localhost:8080/mytodo/"+event.target.id;
+        
+        fetch(url, {
+                method: 'put',
+                headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                            // 'Content-Type': 'application/json'
+                    },
+                    mode: 'cors',
+                body: this.serialize({ text: event.target.value})
+                
+            })
             this.setState({ edit: false });
+        }
         }
         if (event.which === 27) {
             let textupdate = this.state.textupdate;
@@ -79,33 +102,53 @@ class ToDoItems extends Component {
     }
 
     saveonfocuschange(event) {
-        this.setState({
-            text: event.target.value,
-            edit: false
-        });
-    }
+        // this.setState({
+        //     text: event.target.value,
+        //     edit: false
+        // });
+        if(event.target.value!==""){
 
+            let url="http://localhost:8080/mytodo/"+event.target.id;
+        
+        fetch(url, {
+                method: 'put',
+                headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                            // 'Content-Type': 'application/json'
+                    },
+                    mode: 'cors',
+                body: this.serialize({ text: event.target.value})
+                
+            })
+            this.setState({ text: event.target.value,edit: false });
+    }else{
+        this.setState({
+                edit: false,
+                text: this.state.textupdate
+            });
+    }
+}
     render() {
         let todolists;
         let todotexttype;
         if (this.state.edit === false) {
             todolists = < span style = { styles.item }
-            onDoubleClick = { this.changetodotype.bind(this) } > { this.state.text } < /span>
+            onDoubleClick = { this.changetodotype.bind(this) } key={this.state.id}> { this.state.text }  < /span>
         } else {
             todolists = < TextField value = { this.state.text }
-            ref = "textField"
-            id = { String(this.props.id) }
+            ref = "textField" style = { styles.item}
+            id = { String(this.props.id) } key= {this.props.id}
             onChange = { this.modifytodo.bind(this) }
             onKeyDown = { this.updatetodoitems.bind(this) }
             onBlur = { this.saveonfocuschange.bind(this) }
             / > 
         }
 
-        let checkbox = < Checkbox key = { this.props.id }
+        let checkbox = < Checkbox
         style = { styles.checkbox }
         id = { this.props.id }
         checked = { this.props.status }
-        onCheck = { this.props.toggleCheck }
+        onCheck = { this.props.toggleCheck } 
         />
         return ( < Paper style = { styles.container }
             zDepth = { 1 } > { checkbox } { todolists }

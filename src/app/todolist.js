@@ -7,12 +7,25 @@ import Checkbox from 'material-ui/Checkbox';
 import { List, ListItem } from 'material-ui/List';
 import ToDoItems from './ToDoItems';
 import FlatButton from 'material-ui/FlatButton';
+import CircularProgress from 'material-ui/CircularProgress';
 
+import RefreshIndicator from 'material-ui/RefreshIndicator';
 
 const styles = {
     listitem: {
-        alignItems: 'center',
+        width: 800,
+        display: 'flex',
+        textAlign: 'left',
         display: 'inline-block',
+        lineHeight: '28px',
+        fontSize: '26px',
+        margin: 0,
+        width: '88%',
+        position: 'relative',
+    },
+    refresh: {
+        display: 'inline-block',
+        position: 'relative',
     },
 };
 
@@ -29,27 +42,27 @@ class TodoList extends Component {
             todolistitems: [],
             hint: "Add todo item",
             value: Date.now(),
-            newkey: 1
+            newkey: 1,
+            loading: true
         }
     }
     componentWillMount() {
-        fetch('http://localhost:8080/api/', {
+        fetch('http://localhost:8080/mytodo', {
                 method: 'get',
                 mode: 'cors'
             })
             .then(res => res.json())
             .then(data => {
-                data.map(todo => {
-                    let newtodolist = this.state.todolistitems;
-                    newtodolist.push({
-                        id: todo.id,
+                let newtodolist=data.map(todo => {
+                    return  {
+                        id: todo._id,
                         text: todo.text,
-                        completed: todo.completed
-                    });
-                    this.setState({ todolistitems: newtodolist });
+                        completed: todo.Completed
+                  }
                 });
+                newtodolist.reverse();
+                this.setState({ todolistitems: newtodolist, loading:false});
             })
-
     }
     serialize(obj) {
         var str = [];
@@ -62,19 +75,14 @@ class TodoList extends Component {
     }
 
     addtodoitems(event) {
-
         if (event.which === 13) {
-            let newtodolist = this.state.todolistitems;
-            newtodolist.push({
-                text: event.target.value,
-                completed: false
-            });
-            this.setState({ todolistitems: newtodolist });
-            fetch('http://localhost:8080/api/mytodo', {
+            console.log("add called");
+
+            if(event.target.value!==""){
+            fetch('http://localhost:8080/mytodo', {
                     method: 'post',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded'
-                            // 'Content-Type': 'application/json'
                     },
                     mode: 'no-cors',
                     body: this.serialize({ text: event.target.value, completed: false })
@@ -82,18 +90,38 @@ class TodoList extends Component {
                 })
                 .then(res => res.json())
                 .then(data => {
-                    data.map(todo => {
-                        let newtodolist = this.state.todolistitems;
-                        newtodolist.push({
-                            id: todo.id,
-                            text: todo.text,
-                            completed: todo.completed
-                        });
-                        this.setState({ todolistitems: newtodolist });
-                    });
+                    console.log(data.message);
+                 });
+                let newtodolist=[];
+                newtodolist.push({
+                    id: Date.now(),
+                    text: event.target.value,
+                    completed:false
                 });
-                // this.state.value=Date.now();
-        }
+                // newtodolist.push(this.state.todolistitems);
+                for(let i in this.state.todolistitems){
+                    newtodolist.push(this.state.todolistitems[i]);
+                }
+                this.setState({todolistitems: newtodolist});
+            //      fetch('http://localhost:8080/mytodo', {
+            //     method: 'get',
+            //     mode: 'cors'
+            // })
+            // .then(res => res.json())
+            // .then(data => {
+            //     console.log("fetch called");
+            //     let newtodolist=data.map(todo => {
+            //         return  {
+            //             id: todo._id,
+            //             text: todo.text,
+            //             completed: todo.Completed
+            //       }
+            //     });
+            //     newtodolist.reverse();
+            //     this.setState({ todolistitems: newtodolist, loading:false});
+            // })
+            this.state.value = Date.now();
+        }}
     }
 
     toggleCheckboxAction(id) {
@@ -111,40 +139,26 @@ class TodoList extends Component {
         });
 
         this.setState({ todolistitems });
-        console.log(this.state.todolistitems);
     }
 
     removetodos(id) {
+        let todolistitem = this.state.todolistitems;
+        todolistitem = todolistitem.filter((el) => {
 
-        let todolistitems = this.state.todolistitems;
-        todolistitems = todolistitems.filter((el) => {
             return el.id !== id;
         });
 
-        fetch('http://localhost:8080/api/mytodo/', {
+        this.setState({ todolistitems: todolistitem, value: Date.now() });
+        let url = "http://localhost:8080/mytodo/" + id;
+        
+        fetch(url, {
                 method: 'delete',
-                mode: 'cors',
-                id: id
+                mode: 'cors'
+
             })
-            .then(res => res.json())
-            .then(data => {
-                data.map(todo => {
-                    let newtodolist = this.state.todolistitems;
-                    this.setState({todolistitems:[]});
-                    newtodolist.push({
-                        id: todo.id,
-                        text: todo.text,
-                        completed: todo.completed
-                    });
-                    this.setState({ todolistitems: newtodolist });
-                });
-            })
-
-
-
-
-
-
+            .then(res => res.json());
+           
+       
     }
 
     clearcomplete() {
@@ -156,40 +170,48 @@ class TodoList extends Component {
         this.setState({ todolistitems });
     }
 
-
-
-
-
-
     render() {
         let clearButton;
         if (this.state.todolistitems.length > 0) {
             clearButton = < FlatButton label = "Clear Completed"
             secondary = { true }
+            key = { 123 }
             onClick = { this.clearcomplete.bind(this) }
             />
         }
         let todolist;
-        todolist = this.state.todolistitems.map(todo => {
-            return <ToDoItems value = { todo.text }
-            id = { todo.id }
-            status = { todo.completed }
-            toggleCheck = { this.toggleCheckboxAction.bind(this, todo.id) }
-            deleteTodos = { this.removetodos.bind(this, todo.id) }
+
+        if (this.state.loading === true) {
+            // todolist= <CircularProgress />/>
+            todolist = < RefreshIndicator
+            size = { 60 }
+            left = { 10 }
+            top = { 40 }
+            status = "loading"
+            style = { styles.refresh }
+            key="loader"
             />
 
-        });
+        } else {
+            todolist = this.state.todolistitems.map(todo => {
+                return <ToDoItems value = { todo.text }
+                id = { todo.id }
+                key = { todo.id }
+                status = { todo.completed }
+                toggleCheck = { this.toggleCheckboxAction.bind(this, todo.id) }
+                deleteTodos = { this.removetodos.bind(this, todo.id) }
+                />
 
-
-
-
-        return ( < MuiThemeProvider >
-            < div >
-            < h1 > Todo List < /h1>  <div> < TextField hintText = { this.state.hint }
+            });
+        }
+        return ( < MuiThemeProvider key="todolist" >
+            < div key = 'mytodoitemlist' >
+            < h1 key = 'heading' > Todo List < /h1>  <div key="tododata"> < TextField hintText = { this.state.hint }
             onKeyPress = { this.addtodoitems.bind(this) }
             key = { this.state.value }
+            style = { styles.item }
 
-            / > < /div > { todolist } < br / > { clearButton }
+            / > < /div > { todolist }  { clearButton }
 
             < /div> 
 
